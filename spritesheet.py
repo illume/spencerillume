@@ -89,8 +89,10 @@ class Strip(game.Game):
         self.looped = 0
 
     def draw(self, screen, world = (0,0)):
-        game.Game.draw(self, screen)
-        screen.blit(self.image, self.pos + world)
+        rects = game.Game.draw(self, screen)
+        r = screen.blit(self.image, self.pos + world)
+        return rects + [r]
+
 
     def update(self, elapsed_time):
         """ update which frame we are drawing.
@@ -120,7 +122,7 @@ class Strip(game.Game):
 class Strips(game.Game):
     """multiple animation strips.
     """
-    def __init__(self, strips, pos):
+    def __init__(self, fnames, pos):
         game.Game.__init__(self)
 
         strips = cyclic_list([])
@@ -187,7 +189,7 @@ class Strips(game.Game):
         self.set_strip(self.strips.idx)
 
     def draw(self, screen):
-        self.strip.draw(screen, self.world)
+        return self.strip.draw(screen, self.world)
 
 
 
@@ -207,46 +209,51 @@ class Background(game.Game):
     def load(self):
         self.image = load_image(self.image_name)
         self.pos = vec2d(0,0)
-        game.Game.draw(self, screen)
-        screen.blit(self.image, self.pos)
 
     def draw(self, screen):
-        screen.blit(self.image, self.pos)
+        rects = game.Game.draw(self, screen)
+
+        where_background = self.pos + self.world
+        r = screen.blit(self.image, where_background)
+        rects.append(r)
+        return rects
     
 
+class Flying(game.Game):
 
-if __name__ == "__main__":
+    def __init__(self):
+        game.Game.__init__(self)
 
-    pygame.init()
-    screen = pygame.display.set_mode((640,480))
-    
-    fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
+    def load(self):
 
-    pos = vec2d(100,100)
-    player = Strips(fnames, pos)
+        self.background = Background("data/images/scroll1.jpg")
+        self.games.append(self.background)
+
+        fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
+        pos = vec2d(100,100)
+        self.player = Strips(fnames, pos)
+        self.games.append(self.player)
 
 
-    background = Background("data/images/scroll1.jpg")
+        self.world = vec2d(0,0)
+        self.player.world = self.world
+        self.background.world = self.world
+        self.screen = pygame.display.get_surface()
 
 
-    going = True
-    clock = pygame.time.Clock()
+    def handle_events(self, events):
+        game.Game.handle_events(self, events)
 
-    x,y = 0,0
-    world = vec2d(30,0)
-    player.world = world
+        player = self.player
 
-    pygame.key.set_repeat (500, 30)
-    i = 0
-    while going:
-        events = pygame.event.get()
+
         for e in events:
             if e.type == QUIT:
-                going = False
+                self.going = False
 
             if e.type == KEYDOWN:
                 if e.key == K_ESCAPE:
-                    going = False
+                    self.going = False
                 if e.key in [K_a, K_LEFT]:
                     player.left()
 
@@ -268,16 +275,26 @@ if __name__ == "__main__":
                 if e.key == K_v:
                     pygame.image.save(screen, "/tmp/spencer_illume.png")
 
-        
-        #y -=1
-        #x -=1
-        world += (0,0)
 
-        #background.pos += (-1,0)
-        player.update(1./25)
-        
+    def draw(self, screen):
+        self.screen = screen
+        return game.Game.draw(self, screen)
+
+
+    def update(self, elapsed_time):
+        """ update which frame we are drawing.
+        """
+        game.Game.update(self, elapsed_time)
+
+
+        screen = self.screen
+        world = self.world
+        player = self.player
+        backround = self.background
+
+
+
         #if player is near the edge of the screen... change the direction.
-        print (player.pos + world).x
 
         where_pos = player.pos + world
 
@@ -312,10 +329,33 @@ if __name__ == "__main__":
         
 
         #screen.fill((0,0,0))
-        where_background = background.pos + world
-        screen.blit(background.image, where_background)
 
-        player.draw(screen)
+
+
+
+
+if __name__ == "__main__":
+
+    pygame.init()
+    screen = pygame.display.set_mode((640,480))
+    
+
+    top = Flying()
+
+
+    top.going = True
+    clock = pygame.time.Clock()
+
+    x,y = 0,0
+
+    pygame.key.set_repeat (500, 30)
+    i = 0
+    while top.going:
+        events = pygame.event.get()
+
+        top.handle_events(events)
+        top.update(1./25)
+        top.draw(screen)
 
         pygame.display.flip()
         clock.tick(25)
