@@ -4,7 +4,9 @@ import pygame
 from pygame.locals import *
 import glob
 
+import game
 from rdpyg.util.cyclic_list import cyclic_list
+from vec2d import vec2d
 
 IMAGE_CACHE = {}
 
@@ -47,7 +49,7 @@ def load_strip(filename, width, colorkey = None):
 
 
 
-class Strip(object):
+class Strip(game.Game):
 
 
     def __init__(self,
@@ -59,10 +61,13 @@ class Strip(object):
                 ):
         """ loop - number of times to loop.  -1 means loop forever.
         """
+        game.Game.__init__(self)
+
         if pos is None:
             self.pos = (0,0)
         else:
             self.pos = pos
+        self.pos = vec2d(pos)
 
         self.loop = loop
         self.looped = 0
@@ -72,8 +77,9 @@ class Strip(object):
         self.gotoBeginning()
 
 
-    def load(self, filename, width=50, colorkey=None):
+    def load(self, filename = None, width=50, colorkey=None):
 
+        if filename is None:return
         self.strip, self.big_image = load_strip(filename, width, colorkey)
         self.idx = 0
 
@@ -83,11 +89,13 @@ class Strip(object):
         self.looped = 0
 
     def draw(self, screen):
+        game.Game.draw(self, screen)
         screen.blit(self.image, self.pos)
 
     def update(self, elapsed_time):
         """ update which frame we are drawing.
         """
+        game.Game.update(self, elapsed_time)
 
         # update which frame we are drawing.
         try:
@@ -109,10 +117,11 @@ class Strip(object):
 
 
 
-class Strips(object):
+class Strips(game.Game):
     """multiple animation strips.
     """
     def __init__(self, strips, pos):
+        game.Game.__init__(self)
 
         strips = cyclic_list([])
         y = 0
@@ -126,21 +135,61 @@ class Strips(object):
 
         self.strips = strips
         self.strip = self.strips[0]
+        self.direction = vec2d(0,0)
+        self.speed = 2
+        self.accel = 1
 
-    def cur(self, idx):
+
+    def up(self):
+        self.direction.y -= self.accel
+        self.normalise_direction()
+
+    def down(self):
+        self.direction.y += self.accel
+        self.normalise_direction()
+
+    def left(self):
+        self.direction.x -= self.accel
+        self.normalise_direction()
+
+    def right(self):
+        self.direction.x += self.accel
+        self.normalise_direction()
+
+    def normalise_direction(self):
+        if self.direction.x > self.speed:
+            self.direction.x = self.speed
+
+        if self.direction.x < -self.speed:
+            self.direction.x = -self.speed
+
+        if self.direction.y > self.speed:
+            self.direction.y = self.speed
+
+        if self.direction.y < -self.speed:
+            self.direction.y = -self.speed
+
+
+    def set_strip(self, idx):
         pos = self.strip.pos
         self.strip = self.strips[idx]
         self.strip.pos = pos
+        self.strips.idx = idx
 
-    def next(self):
+    def next_strip(self):
+        """go to the next strip in the list.
+        """
         self.strips.next()
-        self.cur(self.strips.idx)
+        self.set_strip(self.strips.idx)
 
     def draw(self, screen):
         self.strip.draw(screen)
 
+
+
     def update(self, elapsed_time):
         self.strip.update(elapsed_time)
+        self.strip.pos += self.direction
 
 
 
@@ -151,11 +200,9 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((640,480))
     
     fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
-    print fnames
 
     pos = (0,0)
     player = Strips(fnames, pos)
-
 
 
     background = load_image("data/images/scroll1.jpg")
@@ -176,22 +223,30 @@ if __name__ == "__main__":
             if e.type == KEYDOWN:
                 if e.key == K_ESCAPE:
                     going = False
-                if e.key == K_a:
-                    x += 1
-                if e.key == K_d:
-                    x -= 1
+                if e.key in [K_a, K_LEFT]:
+                    player.left()
 
-                if e.key == K_w:
-                    y += 1
-                if e.key == K_s:
-                    y -= 1
+                if e.key in [K_d, K_RIGHT]:
+                    player.right()
+
+                if e.key in [K_w, K_UP]:
+                    player.up()
+
+                if e.key in [K_s, K_DOWN]:
+                    player.down()
+
                 if e.key == K_SPACE:
                     player.strip.gotoBeginning()
                 if e.key == K_c:
-                    player.next()
+                    # next animation strip
+                    player.next_strip()
+
+                if e.key == K_v:
+                    pygame.image.save(screen, "/tmp/spencer_illume.png")
+
         
-        y -=1
-        x -=1
+        #y -=1
+        #x -=1
 
         player.update(1./25)
         
