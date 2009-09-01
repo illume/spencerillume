@@ -2,24 +2,94 @@
 import os
 import pygame
 from pygame.locals import *
+import glob
+
 
 IMAGE_CACHE = {}
 
-def load_image(filename):
-   if filename not in IMAGE_CACHE:
-       img = pygame.image.load(os.path.join("data", "images",
-                               filename)).convert_alpha()
-       IMAGE_CACHE[filename] = img
-   return IMAGE_CACHE[filename]
+def load_image(filename, colorkey=None):
+    """ colorkey - if -1, then use the top left pixel as the color.
+        colorkey - if None, then use per pixel alpha images.
+    """
+    if filename not in IMAGE_CACHE:
+        if os.path.exists(filename):
+            fname = filename
+        else:
+            fname = os.path.join("data", "images", filename)
+        img = pygame.image.load(fname)
 
-def load_strip(filename, width):
+        if colorkey is not None:
+            # color key images
+            if colorkey is -1:
+                colorkey = img.get_at((0,0))
+            img = img.convert()
+            img.set_colorkey(colorkey, RLEACCEL)
+        else:
+            # per pixel alpha images.
+            img = img.convert_alpha()
+
+        IMAGE_CACHE[filename] = img
+    return IMAGE_CACHE[filename]
+
+
+
+def load_strip(filename, width, colorkey = None):
   imgs = []
-  img = load_image(filename)
+  img = load_image(filename, colorkey)
   for x in range(img.get_width()/width):
       i = img.subsurface(pygame.Rect(x*width, 0, width, img.get_height()))
+      if colorkey:
+          i.set_colorkey(img.get_colorkey(), RLEACCEL)
       imgs.append(i)
   imgs.reverse()
-  return imgs
+  return imgs, img
+
+
+
+class Strip(object):
+
+
+    def __init__(self,
+                 filename=None,
+                 width=None,
+                 colorkey = None,
+                 pos = None,
+                 loop = 1,
+                ):
+        """
+        """
+        if pos is None:
+            self.pos = (0,0)
+        else:
+            self.pos = pos
+
+        if None not in [filename, width]:
+            self.load(filename, width, colorkey)
+
+
+    def load(self, filename, width=50, colorkey=None):
+
+        self.strip, self.big_image = load_strip(filename, width, colorkey)
+        self.idx = 0
+
+
+    def draw(self, screen):
+        screen.blit(self.image, self.pos)
+
+    def update(self, elapsed_time):
+        """ update which frame we are drawing.
+        """
+
+        # update which frame we are drawing.
+        try:
+            self.image = self.strip[self.idx]
+        except IndexError:
+            self.idx = 0
+            self.image = self.strip[self.idx]
+
+        self.idx += 1
+        # 
+        
 
 
 
@@ -28,7 +98,21 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((640,480))
     
-    strip = load_strip("movement-1-test.png", 50)
+    fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
+    print fnames
+
+    strips = []
+    y = 0
+    for i, fname in enumerate(fnames):
+        if "colorkey" in fname:
+            colorkey=-1
+        else:
+            colorkey=None
+        pos = (50*i, y)
+        strips.append( Strip(fname, 50, colorkey, pos=pos) )
+
+
+
 
     going = True
     clock = pygame.time.Clock()
@@ -44,17 +128,13 @@ if __name__ == "__main__":
                 if e.key == K_ESCAPE:
                     going = False
         
-        try:
-            s = strip[i]
-        except IndexError:
-            i = 0
-            s = strip[i]
+        for strip in strips:
+            strip.update(1./25)
         
-        #print i, len(strip)
-        i += 1
-
         screen.fill((0,0,0))
-        screen.blit(s, (0,0))
+        for strip in strips:
+            strip.draw(screen)
+
         pygame.display.flip()
         clock.tick(25)
         #print clock.get_fps()
