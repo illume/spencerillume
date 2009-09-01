@@ -65,9 +65,9 @@ class Strip(game.Game):
 
         if pos is None:
             self.pos = (0,0)
+            raise NotImplementedError("ok")
         else:
             self.pos = pos
-        self.pos = vec2d(pos)
 
         self.loop = loop
         self.looped = 0
@@ -88,9 +88,9 @@ class Strip(game.Game):
         self.idx = 0
         self.looped = 0
 
-    def draw(self, screen):
+    def draw(self, screen, world = (0,0)):
         game.Game.draw(self, screen)
-        screen.blit(self.image, self.pos)
+        screen.blit(self.image, self.pos + world)
 
     def update(self, elapsed_time):
         """ update which frame we are drawing.
@@ -133,11 +133,14 @@ class Strips(game.Game):
             #pos = (50*i, y)
             strips.append( Strip(fname, 50, colorkey, pos=pos, loop=-1) )
 
+        self.pos = pos
         self.strips = strips
         self.strip = self.strips[0]
         self.direction = vec2d(0,0)
         self.speed = 2
         self.accel = 1
+
+        self.world = vec2d(0,0)
 
 
     def up(self):
@@ -174,6 +177,7 @@ class Strips(game.Game):
         pos = self.strip.pos
         self.strip = self.strips[idx]
         self.strip.pos = pos
+        self.pos = pos
         self.strips.idx = idx
 
     def next_strip(self):
@@ -183,15 +187,32 @@ class Strips(game.Game):
         self.set_strip(self.strips.idx)
 
     def draw(self, screen):
-        self.strip.draw(screen)
+        self.strip.draw(screen, self.world)
 
 
 
     def update(self, elapsed_time):
         self.strip.update(elapsed_time)
         self.strip.pos += self.direction
+        self.pos = self.strip.pos
 
 
+
+class Background(game.Game):
+
+    def __init__(self, image_name):
+        self.image_name = image_name
+        game.Game.__init__(self)
+
+    def load(self):
+        self.image = load_image(self.image_name)
+        self.pos = vec2d(0,0)
+        game.Game.draw(self, screen)
+        screen.blit(self.image, self.pos)
+
+    def draw(self, screen):
+        screen.blit(self.image, self.pos)
+    
 
 
 if __name__ == "__main__":
@@ -201,17 +222,20 @@ if __name__ == "__main__":
     
     fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
 
-    pos = (0,0)
+    pos = vec2d(100,100)
     player = Strips(fnames, pos)
 
 
-    background = load_image("data/images/scroll1.jpg")
+    background = Background("data/images/scroll1.jpg")
 
 
     going = True
     clock = pygame.time.Clock()
 
     x,y = 0,0
+    world = vec2d(30,0)
+    player.world = world
+
     pygame.key.set_repeat (500, 30)
     i = 0
     while going:
@@ -247,12 +271,49 @@ if __name__ == "__main__":
         
         #y -=1
         #x -=1
+        world += (0,0)
 
+        #background.pos += (-1,0)
         player.update(1./25)
         
-        #screen.fill((0,0,0))
+        #if player is near the edge of the screen... change the direction.
+        print (player.pos + world).x
+
+        where_pos = player.pos + world
+
+        side = 100
+        jump = 2
+        if where_pos.x > screen.get_width() - side:
+            world -= (jump,0)
+
+        if where_pos.x < side:
+            world += (jump,0)
+
+        if where_pos.y > screen.get_height() - (side + player.strip.image.get_height()):
+            world -= (0,jump)
+
+        if where_pos.y < side:
+            world += (0,jump)
+
+
+        if world.x > 0:
+            world.x = 0
+        if player.pos.x < 0:
+            player.pos.x = 0
+
+
+        if world.y > 0:
+            world.y = 0
+        if player.pos.y < 0:
+            player.pos.y = 0
+
+        #TODO: put checks in for far right, and far bottom.
+
         
-        screen.blit(background, (x,y))
+
+        #screen.fill((0,0,0))
+        where_background = background.pos + world
+        screen.blit(background.image, where_background)
 
         player.draw(screen)
 
