@@ -4,6 +4,7 @@ import pygame
 from pygame.locals import *
 import glob
 
+from rdpyg.util.cyclic_list import cyclic_list
 
 IMAGE_CACHE = {}
 
@@ -54,17 +55,21 @@ class Strip(object):
                  width=None,
                  colorkey = None,
                  pos = None,
-                 loop = 1,
+                 loop = -1,
                 ):
-        """
+        """ loop - number of times to loop.  -1 means loop forever.
         """
         if pos is None:
             self.pos = (0,0)
         else:
             self.pos = pos
 
+        self.loop = loop
+        self.looped = 0
         if None not in [filename, width]:
             self.load(filename, width, colorkey)
+
+        self.gotoBeginning()
 
 
     def load(self, filename, width=50, colorkey=None):
@@ -72,6 +77,10 @@ class Strip(object):
         self.strip, self.big_image = load_strip(filename, width, colorkey)
         self.idx = 0
 
+
+    def gotoBeginning(self):
+        self.idx = 0
+        self.looped = 0
 
     def draw(self, screen):
         screen.blit(self.image, self.pos)
@@ -84,12 +93,55 @@ class Strip(object):
         try:
             self.image = self.strip[self.idx]
         except IndexError:
-            self.idx = 0
-            self.image = self.strip[self.idx]
+            if self.loop == -1 or self.looped < self.loop:
+                self.idx = 0
+                self.image = self.strip[self.idx]
+                self.looped += 1
+                
+            else:
+                self.idx = len(self.strip)-1
+                self.image = self.strip[self.idx]
 
         self.idx += 1
         # 
         
+
+
+
+
+class Strips(object):
+    """multiple animation strips.
+    """
+    def __init__(self, strips, pos):
+
+        strips = cyclic_list([])
+        y = 0
+        for i, fname in enumerate(fnames):
+            if "colorkey" in fname:
+                colorkey=-1
+            else:
+                colorkey=None
+            #pos = (50*i, y)
+            strips.append( Strip(fname, 50, colorkey, pos=pos, loop=-1) )
+
+        self.strips = strips
+        self.strip = self.strips[0]
+
+    def cur(self, idx):
+        pos = self.strip.pos
+        self.strip = self.strips[idx]
+        self.strip.pos = pos
+
+    def next(self):
+        self.strips.next()
+        self.cur(self.strips.idx)
+
+    def draw(self, screen):
+        self.strip.draw(screen)
+
+    def update(self, elapsed_time):
+        self.strip.update(elapsed_time)
+
 
 
 
@@ -101,15 +153,9 @@ if __name__ == "__main__":
     fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
     print fnames
 
-    strips = []
-    y = 0
-    for i, fname in enumerate(fnames):
-        if "colorkey" in fname:
-            colorkey=-1
-        else:
-            colorkey=None
-        pos = (50*i, y)
-        strips.append( Strip(fname, 50, colorkey, pos=pos) )
+    pos = (0,0)
+    player = Strips(fnames, pos)
+
 
 
     background = load_image("data/images/scroll1.jpg")
@@ -139,19 +185,21 @@ if __name__ == "__main__":
                     y += 1
                 if e.key == K_s:
                     y -= 1
+                if e.key == K_SPACE:
+                    player.strip.gotoBeginning()
+                if e.key == K_c:
+                    player.next()
         
         y -=1
         x -=1
 
-        for strip in strips:
-            strip.update(1./25)
+        player.update(1./25)
         
         #screen.fill((0,0,0))
         
         screen.blit(background, (x,y))
 
-        for strip in strips:
-            strip.draw(screen)
+        player.draw(screen)
 
         pygame.display.flip()
         clock.tick(25)
