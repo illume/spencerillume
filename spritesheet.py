@@ -112,11 +112,14 @@ if __name__ == "__main__":
         strips.append( Strip(fname, 50, colorkey, pos=pos) )
 
 
+    background = load_image("data/images/scroll1.jpg")
 
 
     going = True
     clock = pygame.time.Clock()
 
+    x,y = 0,0
+    pygame.key.set_repeat (500, 30)
     i = 0
     while going:
         events = pygame.event.get()
@@ -127,11 +130,26 @@ if __name__ == "__main__":
             if e.type == KEYDOWN:
                 if e.key == K_ESCAPE:
                     going = False
+                if e.key == K_a:
+                    x += 1
+                if e.key == K_d:
+                    x -= 1
+
+                if e.key == K_w:
+                    y += 1
+                if e.key == K_s:
+                    y -= 1
         
+        y -=1
+        x -=1
+
         for strip in strips:
             strip.update(1./25)
         
-        screen.fill((0,0,0))
+        #screen.fill((0,0,0))
+        
+        screen.blit(background, (x,y))
+
         for strip in strips:
             strip.draw(screen)
 
