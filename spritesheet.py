@@ -18,6 +18,7 @@ def load_strip(filename, width):
   for x in range(img.get_width()/width):
       i = img.subsurface(pygame.Rect(x*width, 0, width, img.get_height()))
       imgs.append(i)
+  imgs.reverse()
   return imgs
 
 
