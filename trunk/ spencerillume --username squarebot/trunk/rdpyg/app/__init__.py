@@ -1,0 +1,2 @@
+""" Common functionality for applications.
+"""

@@ -1,0 +1,18 @@
+################################################################################
+
+# User Libs
+import test_utils
+import test.unittest as unittest
+
+# Std Libs
+
+################################################################################
+
+class TestXXXX(unittest.TestCase):
+    def test_XXXX(self):
+        self.assert_(XXX)
+
+################################################################################
+
+if __name__ == '__main__':
+    unittest.main()
