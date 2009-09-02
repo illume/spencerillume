@@ -80,6 +80,7 @@ class Strip(game.Game):
     def load(self, filename = None, width=50, colorkey=None):
 
         if filename is None:return
+
         self.strip, self.big_image = load_strip(filename, width, colorkey)
         self.idx = 0
 
@@ -121,6 +122,16 @@ class Strip(game.Game):
 
 class Strips(game.Game):
     """multiple animation strips.
+
+
+
+
+    So for a colorkey image with 100 pixel wide frames:
+       somename-movement-colorkey-100.png
+
+    For per pixel alpha transparency image with 100 pixel wide frames:
+       somename-movement-100.png
+
     """
     def __init__(self, fnames, pos):
         game.Game.__init__(self)
@@ -133,7 +144,14 @@ class Strips(game.Game):
             else:
                 colorkey=None
             #pos = (50*i, y)
-            strips.append( Strip(fname, 50, colorkey, pos=pos, loop=-1) )
+
+            # get the width out of the filename.
+            parts = fname.split(".")
+            try:
+                width = int(parts[-2].split('-')[-1])
+            except:
+                width = 50
+            strips.append( Strip(fname, width, colorkey, pos=pos, loop=-1) )
 
         self.pos = pos
         self.strips = strips
@@ -311,7 +329,7 @@ class Flying(game.Game):
         self.background = Background("data/images/scroll1.jpg")
         self.games.append(self.background)
 
-        fnames = glob.glob(os.path.join("data", "images", "movement*.png"))
+        fnames = glob.glob(os.path.join("data", "images", "*movement*.png"))
         self.player = Strips(fnames, vec2d(100,100))
         self.games.append(self.player)
 
