@@ -139,7 +139,7 @@ class Strips(game.Game):
         self.strips = strips
         self.strip = self.strips[0]
         self.direction = vec2d(0,0)
-        self.speed = 2
+        self.speed = 40
         self.accel = 1
 
         self.world = vec2d(0,0)
@@ -281,6 +281,8 @@ class Flying(game.Game):
         return game.Game.draw(self, screen)
 
 
+    
+
     def update(self, elapsed_time):
         """ update which frame we are drawing.
         """
@@ -290,21 +292,39 @@ class Flying(game.Game):
         screen = self.screen
         world = self.world
         player = self.player
-        backround = self.background
+        background = self.background
 
 
 
         #if player is near the edge of the screen... change the direction.
 
-        where_pos = player.pos + world
 
         side = 100
-        jump = 2
+        jump = player.speed
+
+
+        right_side = background.image.get_width() - screen.get_width()
+        if world.x <= -(right_side):
+            world.x = -(right_side)
+            #world.x += player.strip.image.get_width()
+
+        bottom = background.image.get_height() - screen.get_height()
+        if world.y <= -(bottom):
+            world.y = -(bottom)
+
+
+        where_pos = player.pos + world
+
         if where_pos.x > screen.get_width() - side:
             world -= (jump,0)
 
         if where_pos.x < side:
             world += (jump,0)
+
+        #if where_pos.x >= (background.image.get_width() - screen.get_width()):
+        #    print 'asdf'
+        #    player.pos.x = (background.image.get_width() - screen.get_width())
+
 
         if where_pos.y > screen.get_height() - (side + player.strip.image.get_height()):
             world -= (0,jump)
@@ -319,16 +339,23 @@ class Flying(game.Game):
             player.pos.x = 0
 
 
+        if player.pos.x > background.image.get_width()-player.strip.image.get_width():
+            player.pos.x = background.image.get_width()-player.strip.image.get_width()
+        
+        if player.pos.y > background.image.get_height()-player.strip.image.get_height():
+            player.pos.y = background.image.get_height()-player.strip.image.get_height()
+
         if world.y > 0:
             world.y = 0
         if player.pos.y < 0:
             player.pos.y = 0
 
-        #TODO: put checks in for far right, and far bottom.
 
         
 
         #screen.fill((0,0,0))
+
+
 
 
 
