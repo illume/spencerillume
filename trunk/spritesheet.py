@@ -70,6 +70,8 @@ class Strip(game.Game):
             self.pos = pos
 
         self.loop = loop
+        self.filename = filename
+        
         self.looped = 0
         if None not in [filename, width]:
             self.load(filename, width, colorkey)
@@ -83,6 +85,7 @@ class Strip(game.Game):
 
         self.strip, self.big_image = load_strip(filename, width, colorkey)
         self.idx = 0
+        self.filename = filename
 
 
     def gotoBeginning(self):
@@ -199,12 +202,23 @@ class Strips(game.Game):
         self.strip.pos = pos
         self.pos = pos
         self.strips.idx = idx
+        print "changed to:", self.strip.filename
 
     def next_strip(self):
         """go to the next strip in the list.
         """
         self.strips.next()
         self.set_strip(self.strips.idx)
+
+
+    def strip_name(self, name):
+        """ select the first strip with the given name
+        """
+
+        ones = [(i,s) for i,s in enumerate(self.strips) if name in s.filename]
+        self.set_strip( ones[0][0] )
+
+
 
     def draw(self, screen):
         """

@@ -138,6 +138,12 @@ class Flying(game.Game):
                 if e.key == K_c:
                     # next animation strip
                     player.next_strip()
+            
+                if e.key == K_r:
+                    player.strip_name("running1")
+
+                if e.key == K_f:
+                    player.strip_name("flying1")
 
                 if e.key == K_v:
                     pygame.image.save(screen, "/tmp/spencer_illume.png")
