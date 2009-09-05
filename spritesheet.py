@@ -86,7 +86,7 @@ class Strip(game.Game):
         self.strip, self.big_image = load_strip(filename, width, colorkey)
         self.idx = 0
         self.filename = filename
-
+        self.update(0)
 
     def gotoBeginning(self):
         self.idx = 0

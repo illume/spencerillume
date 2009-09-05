@@ -103,6 +103,8 @@ class Flying(game.Game):
 
         fnames = glob.glob(os.path.join("data", "images", "*wind*.png"))
         wind_strip = Strips(fnames, vec2d(30,100))
+        print dir(wind_strip)
+        print dir(wind_strip.strip)
 
         self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world, wind_strip)
         self.games.append(self.wind)
@@ -247,16 +249,17 @@ class Flying(game.Game):
 
 class Wind(game.Game):
 
-    def __init__(self, pos, direction, world, strip):
+    def __init__(self, pos, direction, world, strips):
         game.Game.__init__(self)
         self.pos = pos
         self.direction = direction
         self.world = world
         self.length = 320
         self.width = 50
-        self.strip = strip
-        self.games.append(strip)
-        self.strip.pos = pos
+        self.strips = strips
+        self.games.append(strips)
+        self.strips.pos = pos
+        self.strips.strip.pos = pos
     
         #direction. + rect going the screen width
         x,y = self.pos
@@ -281,9 +284,17 @@ class Wind(game.Game):
         game.Game.update(self, elapsed_time)
 
     def draw(self, screen):
-        rects = game.Game.draw(self, screen)
+        #rects = game.Game.draw(self, screen)
+        #return rects
 
-        return rects
+        x,y= (self.pos + self.world)
+        whereat = pygame.Rect(self.collision_rect)
+        whereat[0] = x
+        whereat[1] = y
+
+        r = screen.blit(self.strips.strip.image, whereat)
+        return [r]
+
 
         # this bit draws a rectangle... not needed.
 
