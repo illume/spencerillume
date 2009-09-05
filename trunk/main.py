@@ -103,8 +103,6 @@ class Flying(game.Game):
 
         fnames = glob.glob(os.path.join("data", "images", "*wind*.png"))
         wind_strip = Strips(fnames, vec2d(30,100))
-        print dir(wind_strip)
-        print dir(wind_strip.strip)
 
         self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world, wind_strip)
         self.games.append(self.wind)
