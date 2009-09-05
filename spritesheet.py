@@ -207,6 +207,24 @@ class Strips(game.Game):
         self.set_strip(self.strips.idx)
 
     def draw(self, screen):
+
+        rects = game.Game.draw(self, screen)
+        d = self.direction
+
+        if d.x < 0:
+            dx = 1
+        else:
+            dx = 0
+
+        r = screen.blit(pygame.transform.flip(self.strip.image, dx, 0), self.strip.pos + self.world)
+        return rects + [r]
+
+    def drawxx(self, screen, world = (0,0)):
+        rects = game.Game.draw(self, screen)
+        r = screen.blit(self.image, self.pos + world)
+        return rects + [r]
+
+
         return self.strip.draw(screen, self.world)
 
 
