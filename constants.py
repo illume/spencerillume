@@ -4,6 +4,7 @@ import pygame
 
 FPS = 30
 SCREEN_SIZE = (640,480)
+SCREEN_SIZE = (800,600)
 
 
 # how much time do they have to get a note?
