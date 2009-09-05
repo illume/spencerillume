@@ -88,7 +88,11 @@ class Flying(game.Game):
         self.player = Strips(fnames, vec2d(100,100))
         self.games.append(self.player)
 
+        #fnames = glob.glob(os.path.join("data", "images", "*wind*.png"))
+        #self.wind = Strips(fnames, vec2d(10,100))
+        #self.games.append(self.wind)
         
+
 
         self.world = vec2d(0,0)
         self.player.world = self.world
@@ -96,7 +100,11 @@ class Flying(game.Game):
         self.screen = pygame.display.get_surface()
 
 
-        self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world)
+
+        fnames = glob.glob(os.path.join("data", "images", "*wind*.png"))
+        wind_strip = Strips(fnames, vec2d(30,100))
+
+        self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world, wind_strip)
         self.games.append(self.wind)
 
 
@@ -225,6 +233,93 @@ class Flying(game.Game):
 
 
 
+
+
+
+
+
+
+class Wind(game.Game):
+
+    def __init__(self, pos, direction, world, strip):
+        game.Game.__init__(self)
+        self.pos = pos
+        self.direction = direction
+        self.world = world
+        self.length = 320
+        self.width = 50
+        self.strip = strip
+        self.games.append(strip)
+        self.strip.pos = pos
+    
+        #direction. + rect going the screen width
+        x,y = self.pos
+        dx, dy = self.direction
+        if dx < 0:
+            r = (x-self.length,y, self.length, self.width)
+        elif dx > 0:
+            r = (x,y, self.length, self.width)
+        
+        elif dy < 0:
+            r = (x,y-self.length, self.width, self.length)
+        elif dy > 0:
+            r = (x,y, self.width, self.length)
+
+        self.collision_rect = r
+
+
+
+    def update(self, elapsed_time):
+        """ update which frame we are drawing.
+        """
+        game.Game.update(self, elapsed_time)
+
+    def draw(self, screen):
+        rects = game.Game.draw(self, screen)
+
+        return rects
+
+        # this bit draws a rectangle... not needed.
+
+        x,y= (self.pos + self.world)
+        whereat = pygame.Rect(self.collision_rect)
+        whereat[0] = x
+        whereat[1] = y
+
+        w,h = self.collision_rect[2], self.collision_rect[3]
+
+        #r = screen.fill((27,0,0,0), whereat, BLEND_RGBA_ADD)
+        s = pygame.Surface((w,h)).convert_alpha()
+        s.fill((255,0,0,127))
+
+        r = screen.blit(s, whereat, None, BLEND_RGBA_ADD)
+        #r = pygame.draw.rect(screen, (255,0,0,127), whereat)
+
+        rects.append(r)
+        return rects
+
+
+    def collides(self, other):
+        # make collision rect.
+        x,y= other.pos
+        r = other.image.get_rect()
+        w,h = r[2], r[3]
+
+
+
+        other_rect = pygame.Rect(x,y,w,h)
+        other_rect.inflate_ip(-8, -8)
+
+
+
+        x,y= (self.pos + self.world)
+        whereat = pygame.Rect(self.collision_rect)
+        whereat[0] = x
+        whereat[1] = y
+
+
+
+        return other_rect.colliderect(whereat)
 
 
 
