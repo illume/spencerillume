@@ -33,7 +33,7 @@ from game import Game
 #    Or playing your guitar.
 
 
-
+from spritesheet import *
 
 
 class Top(Game):
@@ -61,12 +61,164 @@ class Top(Game):
 
         return rects
 
-
+    def load(self):
+        self.flying = Flying()
+        self.games.append( self.flying )
 
     def stop_all(self):
         for g in self.games:
             g.stop()
        
+
+
+
+
+
+class Flying(game.Game):
+
+    def __init__(self):
+        game.Game.__init__(self)
+
+    def load(self):
+
+        self.background = Background("data/images/scroll1.jpg")
+        self.games.append(self.background)
+
+        fnames = glob.glob(os.path.join("data", "images", "*movement*.png"))
+        self.player = Strips(fnames, vec2d(100,100))
+        self.games.append(self.player)
+
+        
+
+        self.world = vec2d(0,0)
+        self.player.world = self.world
+        self.background.world = self.world
+        self.screen = pygame.display.get_surface()
+
+
+        self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world)
+        self.games.append(self.wind)
+
+
+    def handle_events(self, events):
+        game.Game.handle_events(self, events)
+
+        player = self.player
+
+
+        for e in events:
+            if e.type == QUIT:
+                self.going = False
+
+            if e.type == KEYDOWN:
+                if e.key == K_ESCAPE:
+                    self.going = False
+                if e.key in [K_a, K_LEFT]:
+                    player.left()
+
+                if e.key in [K_d, K_RIGHT]:
+                    player.right()
+
+                if e.key in [K_w, K_UP]:
+                    player.up()
+
+                if e.key in [K_s, K_DOWN]:
+                    player.down()
+
+                if e.key == K_SPACE:
+                    player.strip.gotoBeginning()
+                if e.key == K_c:
+                    # next animation strip
+                    player.next_strip()
+
+                if e.key == K_v:
+                    pygame.image.save(screen, "/tmp/spencer_illume.png")
+
+
+    def draw(self, screen):
+        self.screen = screen
+        return game.Game.draw(self, screen)
+
+
+    
+
+    def update(self, elapsed_time):
+        """ update which frame we are drawing.
+        """
+        game.Game.update(self, elapsed_time)
+
+
+        screen = self.screen
+        world = self.world
+        player = self.player
+        background = self.background
+        wind = self.wind
+
+
+        if wind.collides(player.strip):
+            player.pos += (wind.direction * 3)
+
+
+        #if player is near the edge of the screen... change the direction.
+
+
+        side = 100
+        jump = player.speed
+
+
+        right_side = background.image.get_width() - screen.get_width()
+        if world.x <= -(right_side):
+            world.x = -(right_side)
+            #world.x += player.strip.image.get_width()
+
+        bottom = background.image.get_height() - screen.get_height()
+        if world.y <= -(bottom):
+            world.y = -(bottom)
+
+
+        where_pos = player.pos + world
+
+        if where_pos.x > screen.get_width() - side:
+            world -= (jump,0)
+
+        if where_pos.x < side:
+            world += (jump,0)
+
+        #if where_pos.x >= (background.image.get_width() - screen.get_width()):
+        #    print 'asdf'
+        #    player.pos.x = (background.image.get_width() - screen.get_width())
+
+
+        if where_pos.y > screen.get_height() - (side + player.strip.image.get_height()):
+            world -= (0,jump)
+
+        if where_pos.y < side:
+            world += (0,jump)
+
+
+        if world.x > 0:
+            world.x = 0
+        if player.pos.x < 0:
+            player.pos.x = 0
+
+
+        if player.pos.x > background.image.get_width()-player.strip.image.get_width():
+            player.pos.x = background.image.get_width()-player.strip.image.get_width()
+        
+        if player.pos.y > background.image.get_height()-player.strip.image.get_height():
+            player.pos.y = background.image.get_height()-player.strip.image.get_height()
+
+        if world.y > 0:
+            world.y = 0
+        if player.pos.y < 0:
+            player.pos.y = 0
+
+
+        
+
+        #screen.fill((0,0,0))
+
+
 
 
 
@@ -113,9 +265,10 @@ def main():
 
 
     screen = pygame.display.set_mode(constants.SCREEN_SIZE)
-    
+    pygame.key.set_repeat (500, 30) 
 
     top = Top(name = "spencerillume  what is our game called?")
+    #top = Flying()
     top.set_main()
 
 
