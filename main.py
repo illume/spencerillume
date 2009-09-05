@@ -104,8 +104,11 @@ class Flying(game.Game):
         fnames = glob.glob(os.path.join("data", "images", "*wind*.png"))
         wind_strip = Strips(fnames, vec2d(30,100))
 
-        self.wind = Wind(vec2d(30,125), vec2d(0,-1), self.world, wind_strip)
-        self.games.append(self.wind)
+        self.winds = []
+        for p in [(30,125), (400, 120)]:
+            wind = Wind(vec2d(*p), vec2d(0,-1), self.world, wind_strip)
+            self.winds.append(wind)
+            self.games.append(wind)
 
 
     def handle_events(self, events):
@@ -166,11 +169,11 @@ class Flying(game.Game):
         world = self.world
         player = self.player
         background = self.background
-        wind = self.wind
+        #wind = self.wind
 
-
-        if wind.collides(player.strip):
-            player.pos += (wind.direction * 3)
+        for wind in self.winds:
+            if wind.collides(player.strip):
+                player.pos += (wind.direction * 3)
 
 
         #if player is near the edge of the screen... change the direction.
